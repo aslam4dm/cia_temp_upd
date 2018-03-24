@@ -13,13 +13,13 @@ from Crypto.Cipher import AES
 	# change
 #uname offline
 #list of all current users
-users = {}
+users = []
 
 # global padding
 padding = "#"
 
 # global block_size
-block_size = 32
+block_size = 128
 
 os.system("clear")
 def banner():
@@ -47,8 +47,8 @@ def server_handle(addr, port, server_status):
 		sleep(2)
 	else:
 		print("\nServer error")
-
 # deals with ctrl-C interrupts
+
 def sigint_handler(signum, frame):
     kill_message = "\n{}Shutting down server......{}\n".format(C.red, C.end)
     for char in kill_message:
@@ -59,8 +59,8 @@ def sigint_handler(signum, frame):
     sys.exit()	 
 signal.signal(signal.SIGINT, sigint_handler)
 
-def hasher(key):
-	hash_object = hashlib.sha512(key.encode('utf-8'))
+def hasher(pwd):
+	hash_object = hashlib.sha512(pwd.encode('utf-8'))
 	hexd = hash_object.hexdigest()
 	hash_object = hashlib.md5(hexd.encode('utf-8'))
 	hex_dig = hash_object.hexdigest()
@@ -73,7 +73,6 @@ def encrypt(pwd,data):
 	encoded = encode_aes(cipher, data)
 	return encoded
 
-
 def decrypt(pwd,data):
 	pad = lambda s: s + (block_size - len(s) % block_size) * padding
 	decode_aes = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(padding)
@@ -83,20 +82,19 @@ def decrypt(pwd,data):
 
 config = configparser.RawConfigParser()   
 config.read(r'cia-chat.conf')
-HOST = config.get('config', 'HOST')
-PORT = int(config.get('config', 'PORT'))
-PASSWORD = config.get('config', 'PASSWORD')
-key = hasher(PASSWORD)
+host = config.get('config', 'HOST')
+port = int(config.get('config', 'PORT'))
+pwd = config.get('config', 'PASSWORD')
+key = hasher(pwd)
 socket_connections = []
 
 def cia_chat():	
 	sock_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)	
 	sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)	
-	sock_server.bind((HOST, PORT))	
+	sock_server.bind((host, port))	
 	sock_server.listen(10)	
 	socket_connections.append(sock_server)
-
-	server_handle(HOST, str(PORT), True)
+	server_handle(host, str(port), True)
 	while True:
 	    ready_to_read,ready_to_write,in_error = select.select(socket_connections,[],[],0)
 	    for sock in ready_to_read:
@@ -104,8 +102,7 @@ def cia_chat():
 	            conn, addr = sock_server.accept()
 	            socket_connections.append(conn)
 	            username = conn.recv(1024)
-	            users[str(addr[1])] = username
-	            print(users)
+	            users.append(username)
 	            # at this point if a user has connected, we want to accept a username
 	            print("user {} connected".format(addr))
 	            display_message(sock_server, conn, encrypt(key,"\n{} Entered our chat room\n".format(username)))
@@ -120,10 +117,11 @@ def cia_chat():
 	                        socket_connections.remove(sock)
 	                    # need some sort selector which determines which user has left
 	                    # we keep supplying same port number to dict
-	                    display_message(sock_server, sock,encrypt(key,"\n{} has left the chat room\n".format(users[str(addr[1])])))
-	                    print(addr[1])
+	                    print("\n user {} disconnected".format(addr))
+	                    display_message(sock_server, sock,encrypt(key,"\n{} has left the chat room\n".format(addr[0])))	                    
 	            except:
-					display_message(sock_server, sock, "\n{} has left the chat room\n".format(users[str(addr[1])]))
+	            	print("\n user {} disconnected".format(addr))
+					display_message(sock_server, sock, "\n{} has left the chat r00m\n".format(addr[0]))
 					continue
 	sock_server.close()
 
@@ -137,7 +135,5 @@ def display_message(sock_server, sock, message):
                 socket.close()
                 if socket in socket_connections:
                     socket_connections.remove(socket)
-
-
 if  __name__ == "__main__": 
 	cia_chat()
