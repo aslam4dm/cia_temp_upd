@@ -29,14 +29,19 @@ os.system("clear")
 # global padding will be used for encryption and decryption
 padding = "#"
 # global block size
-block_size = 32
+block_size = 128
 # global determines a user has quit
 logout_status = 0
-#global host and port #testing
-host = "127.0.0.1"
-port = 4444
+# global testing 
+#HOST = sys.argv[1]
+#PORT = int(sys.argv[2])
+"""
+PWD  = sys.argv[3]
+USERNAME = sys.argv[4]
+"""
 
 def sigint_handler(signum, frame):
+#	send_kill(HOST, PORT)
 	message = "\n{}quitting session......{}\n".format(myColour, C.end)
 	for char in message:
 		sys.stdout.write(char)
@@ -47,6 +52,21 @@ def sigint_handler(signum, frame):
 	sleep(0.4)
 	sys.exit()	
 signal.signal(signal.SIGINT, sigint_handler)
+
+"""
+def send_kill(hostname, port):
+	# RECONNECT TO SERVER ONLY TO SEND UR USERNAME ONE LAST TIME
+	set_pwd = sys.argv[3]
+	set_pwd = hasher(set_pwd)	
+	uname = sys.argv[4]
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.settimeout(2)
+	try:
+		sock.connect((hostname, port))
+		sock.send("{}{}{}".format(myColour, uname, C.end))
+	except:
+		pass
+"""
 
 def hasher(usr_pwd):
 	hash_obj = hashlib.sha512(usr_pwd)
